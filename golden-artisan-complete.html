@@ -1,0 +1,1164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Golden Artisan FX Trader</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&family=Rajdhani:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- ════════════════════════════════════════════════════════════
+     🔥 FIREBASE CONFIG — WAJIB DIISI SEBELUM DIGUNAKAN
+     ════════════════════════════════════════════════════════════
+     1. Buka https://console.firebase.google.com
+     2. Project Settings → General → Your apps → Web app
+     3. Copy firebaseConfig lalu paste di bawah (ganti semua nilai YOUR_...)
+     ════════════════════════════════════════════════════════════ -->
+<script type="module">
+  import { initializeApp }                        from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getDatabase, ref, get, set, onValue }  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+ const firebaseConfig = {
+  apiKey: "AIzaSyA7q8PeH82PGo_d-0hLXzgizEFEjN9pKOI",
+  authDomain: "artisan-goldenfx-b5f94.firebaseapp.com",
+  databaseURL: "https://artisan-goldenfx-b5f94-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "artisan-goldenfx-b5f94",
+  storageBucket: "artisan-goldenfx-b5f94.firebasestorage.app",
+  messagingSenderId: "878210972514",
+  appId: "1:878210972514:web:53a1020aba8475c913ca3b"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const db  = getDatabase(app);
+  window._fb = { db, ref, get, set, onValue };
+  window.dispatchEvent(new Event('firebase-ready'));
+</script>
+
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --gold:        #FFD700;
+  --gold-mid:    #D4A017;
+  --gold-deep:   #A67C00;
+  --gold-glow:   rgba(255,215,0,0.3);
+  --bg:          #060504;
+  --card-bg:     rgba(10,8,4,0.92);
+  --border:      rgba(212,160,23,0.38);
+  --green:       #22c55e;
+  --green-dark:  #15803d;
+  --red:         #ef4444;
+  --red-dark:    #991b1b;
+  --orange:      #f97316;
+  --text-dim:    rgba(255,255,255,0.45);
+}
+
+html, body {
+  min-height: 100%;
+  font-family: 'Rajdhani', sans-serif;
+  background: var(--bg);
+  color: #fff;
+  overflow-x: hidden;
+}
+
+/* ── BACKGROUND ── */
+.bg-wrap {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% -5%,  rgba(180,120,0,0.20) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 15% 55%,  rgba(120,80,0,0.09)  0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 55%,  rgba(120,80,0,0.09)  0%, transparent 55%),
+    #060504;
+}
+.bg-wrap::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(212,160,23,0.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,160,23,0.028) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 30%, black 20%, transparent 80%);
+}
+
+/* ── PARTICLES ── */
+.particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; overflow: hidden; }
+.particle {
+  position: absolute; border-radius: 50%;
+  background: var(--gold); opacity: 0;
+  animation: drift linear infinite;
+}
+@keyframes drift {
+  0%   { opacity: 0; transform: translateY(0) scale(0); }
+  8%   { opacity: 0.75; }
+  88%  { opacity: 0.12; }
+  100% { opacity: 0; transform: translateY(-115vh) scale(1.4); }
+}
+
+/* ── LAYOUT ── */
+.page {
+  position: relative; z-index: 2;
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px 16px;
+}
+
+/* ── SCREENS ── */
+.screen { display: none; width: 100%; justify-content: center; align-items: flex-start; }
+.screen.active { display: flex; }
+
+/* ── CARD ── */
+.card {
+  width: 100%; max-width: 430px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  padding: 50px 38px 42px;
+  backdrop-filter: blur(32px);
+  box-shadow:
+    0 0 0 1px rgba(255,215,0,0.05),
+    0 10px 48px rgba(0,0,0,0.75),
+    0 0 90px rgba(160,100,0,0.10),
+    inset 0 1px 0 rgba(255,215,0,0.10);
+  animation: cardIn 0.8s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(28px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── LOGO ── */
+.logo-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: 8px;
+  animation: fadeDown 0.65s 0.1s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes fadeDown {
+  from { opacity: 0; transform: translateY(-14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.logo-icon {
+  width: 82px; height: 82px; margin-bottom: 14px;
+  filter: drop-shadow(0 0 16px rgba(255,215,0,0.48));
+  animation: logoPulse 3s ease-in-out infinite;
+}
+@keyframes logoPulse {
+  0%,100% { filter: drop-shadow(0 0 12px rgba(255,215,0,0.40)); }
+  50%      { filter: drop-shadow(0 0 26px rgba(255,215,0,0.72)); }
+}
+.brand-main {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(26px, 7vw, 36px);
+  font-weight: 900;
+  letter-spacing: 0.20em;
+  background: linear-gradient(135deg, #ffe066 0%, #D4A017 30%, #FFD700 52%, #a67c00 78%, #ffe066 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  animation: shimmer 4s ease infinite;
+  line-height: 1; margin-bottom: 5px;
+}
+@keyframes shimmer {
+  0%,100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+.brand-sub {
+  font-size: clamp(9px, 2.8vw, 11px); font-weight: 500;
+  letter-spacing: 0.44em; color: var(--gold-mid); opacity: 0.78;
+  text-transform: uppercase;
+}
+
+/* ── GOLD LINE ── */
+.gold-line {
+  width: 100%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-mid), rgba(255,200,50,0.9), var(--gold-mid), transparent);
+  margin: 22px 0 26px;
+  position: relative;
+}
+.gold-line::after {
+  content: ''; position: absolute; left: 50%; top: 0; transform: translateX(-50%);
+  width: 60px; height: 3px;
+  background: radial-gradient(ellipse, rgba(255,215,0,0.85) 0%, transparent 70%);
+  filter: blur(2px);
+  animation: linePulse 2.8s ease-in-out infinite;
+}
+@keyframes linePulse {
+  0%,100% { opacity: 0.4; width: 55px; }
+  50%      { opacity: 1;   width: 95px; }
+}
+
+/* ── SECTION LABEL ── */
+.section-label {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 26px;
+}
+.section-label::before, .section-label::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-mid), transparent); opacity: 0.4;
+}
+.section-label span {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.3em;
+  color: var(--gold-mid); white-space: nowrap;
+}
+
+/* ── FORM FIELDS ── */
+.field { margin-bottom: 20px; }
+.field-lbl {
+  display: flex; align-items: center; gap: 7px;
+  margin-bottom: 9px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.28em; color: var(--gold-mid);
+}
+.input-wrap { position: relative; }
+.input-ico {
+  position: absolute; left: 15px; top: 50%; transform: translateY(-50%);
+  opacity: 0.38; pointer-events: none; transition: opacity 0.3s;
+}
+.input-wrap:focus-within .input-ico { opacity: 0.82; }
+
+input[type="text"], input[type="password"] {
+  width: 100%;
+  padding: 15px 46px 15px 46px;
+  background: rgba(255,215,0,0.035);
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  color: rgba(255,255,255,0.88);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px; font-weight: 500; letter-spacing: 0.05em;
+  outline: none;
+  transition: all 0.3s cubic-bezier(.16,1,.3,1);
+  caret-color: var(--gold);
+}
+input::placeholder { color: rgba(255,255,255,0.20); }
+input:focus {
+  border-color: rgba(255,215,0,0.60);
+  background: rgba(255,215,0,0.065);
+  box-shadow: 0 0 0 3px rgba(255,215,0,0.09);
+}
+.eye-btn {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  background: none; border: none; cursor: pointer;
+  color: rgba(212,160,23,0.45); padding: 4px; transition: color 0.25s;
+}
+.eye-btn:hover { color: rgba(255,215,0,0.82); }
+
+/* ── BUTTONS ── */
+.btn {
+  width: 100%; padding: 16px;
+  border: none; border-radius: 13px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 15px; font-weight: 700; letter-spacing: 0.22em;
+  cursor: pointer; transition: all 0.3s cubic-bezier(.16,1,.3,1);
+  position: relative; overflow: hidden;
+}
+.btn::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.12) 0%, transparent 50%);
+  pointer-events: none;
+}
+.btn-gold {
+  background: linear-gradient(135deg, #b8880a 0%, #FFD700 38%, #D4A017 58%, #9a6e00 100%);
+  background-size: 200% 200%; color: #1a0f00;
+  box-shadow: 0 4px 24px rgba(255,180,0,0.28), 0 1px 0 rgba(255,255,255,0.15) inset;
+  animation: btnShimmer 3.5s ease infinite;
+}
+@keyframes btnShimmer {
+  0%,100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
+}
+.btn-gold:hover { transform: translateY(-1px); box-shadow: 0 6px 30px rgba(255,180,0,0.38); }
+.btn-gold:active { transform: translateY(0); }
+.btn-gold:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  20%,60% { transform: translateX(-6px); }
+  40%,80% { transform: translateX(6px); }
+}
+
+/* ── ALERT ── */
+.alert {
+  display: none; padding: 12px 16px; border-radius: 10px;
+  font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+  margin-bottom: 16px; line-height: 1.5;
+  animation: fadeUp 0.3s ease;
+}
+.alert.error   { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);  color: #fca5a5; display: block; }
+.alert.success { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: #86efac; display: block; }
+.alert.warn    { background: rgba(249,115,22,0.12); border: 1px solid rgba(249,115,22,0.3); color: #fdba74; display: block; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ════════════════════════════════
+   DASHBOARD
+════════════════════════════════ */
+.dash-card {
+  width: 100%; max-width: 440px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 26px;
+  padding: 0;
+  backdrop-filter: blur(32px);
+  overflow: hidden;
+  box-shadow:
+    0 0 0 1px rgba(255,215,0,0.05),
+    0 10px 48px rgba(0,0,0,0.75),
+    0 0 90px rgba(160,100,0,0.10);
+  animation: cardIn 0.8s cubic-bezier(.16,1,.3,1) both;
+}
+
+/* Header bar */
+.dash-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px 16px;
+  border-bottom: 1px solid rgba(212,160,23,0.15);
+  background: rgba(255,215,0,0.025);
+}
+.dash-brand {
+  display: flex; align-items: center; gap: 10px;
+}
+.dash-brand-icon {
+  width: 32px; height: 32px;
+  filter: drop-shadow(0 0 8px rgba(255,215,0,0.5));
+}
+.dash-brand-name {
+  font-family: 'Cinzel', serif;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.14em;
+  background: linear-gradient(135deg, #ffe066, #D4A017, #FFD700);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.member-badge {
+  display: flex; align-items: center; gap: 8px;
+}
+.member-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-mid), var(--gold-deep));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Cinzel', serif; font-size: 13px; font-weight: 700; color: #1a0f00;
+}
+.member-info { text-align: right; }
+.member-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.75); }
+.logout-btn {
+  background: none; border: 1px solid rgba(212,160,23,0.25); border-radius: 8px;
+  color: var(--gold-mid); cursor: pointer; padding: 5px 10px;
+  font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 0.12em;
+  transition: all 0.25s;
+}
+.logout-btn:hover { background: rgba(212,160,23,0.1); border-color: rgba(212,160,23,0.5); }
+
+/* Sync bar */
+.sync-bar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 24px;
+  background: rgba(0,0,0,0.3);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.sync-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: syncPulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.sync-dot.error { background: var(--red); box-shadow: 0 0 8px var(--red); animation: none; }
+@keyframes syncPulse {
+  0%,100% { opacity: 1; } 50% { opacity: 0.4; }
+}
+.sync-text { font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.05em; }
+
+/* Dash body */
+.dash-body { padding: 28px 28px 24px; }
+
+/* Status big display */
+.status-center {
+  display: flex; flex-direction: column; align-items: center;
+  margin-bottom: 28px;
+}
+.status-ring {
+  width: 100px; height: 100px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 14px;
+  position: relative;
+  transition: all 0.5s ease;
+}
+.status-ring.online {
+  background: radial-gradient(circle, rgba(34,197,94,0.15) 0%, rgba(34,197,94,0.04) 70%);
+  box-shadow: 0 0 0 2px rgba(34,197,94,0.25), 0 0 30px rgba(34,197,94,0.20);
+}
+.status-ring.offline {
+  background: radial-gradient(circle, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.04) 70%);
+  box-shadow: 0 0 0 2px rgba(239,68,68,0.25), 0 0 30px rgba(239,68,68,0.20);
+}
+.status-ring::before {
+  content: ''; position: absolute; inset: -8px; border-radius: 50%;
+  border: 1px solid rgba(34,197,94,0.20);
+  animation: ringBreath 2.5s ease-in-out infinite;
+}
+.status-ring.offline::before { border-color: rgba(239,68,68,0.20); }
+@keyframes ringBreath {
+  0%,100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.05); opacity: 0.5; }
+}
+.status-icon { width: 44px; height: 44px; }
+.status-word {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(28px, 7vw, 36px);
+  font-weight: 700; letter-spacing: 0.14em;
+  transition: color 0.5s, text-shadow 0.5s;
+}
+.status-word.online  { color: var(--green);  text-shadow: 0 0 22px rgba(34,197,94,0.55); }
+.status-word.offline { color: var(--red);    text-shadow: 0 0 22px rgba(239,68,68,0.55); }
+.status-sub {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px; font-style: italic; font-weight: 300;
+  color: rgba(255,255,255,0.42); margin-top: 4px; letter-spacing: 0.06em;
+  transition: color 0.4s;
+}
+
+/* Toggle */
+.toggle-wrap { margin-bottom: 20px; }
+.toggle-lbl {
+  text-align: center; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.32em; color: var(--gold-mid); margin-bottom: 14px;
+}
+.toggle-track {
+  width: 100%; height: 64px; border-radius: 32px;
+  background: linear-gradient(90deg, var(--green) 0%, var(--green-dark) 46%, #1a1a1a 52%, #111 100%);
+  position: relative; cursor: pointer;
+  transition: background 0.4s cubic-bezier(.16,1,.3,1);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), 0 2px 12px rgba(0,0,0,0.4);
+  user-select: none;
+}
+.toggle-track.off {
+  background: linear-gradient(90deg, #111 0%, #1a1a1a 46%, #1b3525 52%, #1e4430 100%);
+}
+.toggle-track.loading { cursor: wait; opacity: 0.7; }
+.track-on  { position: absolute; left: 22px;  top: 50%; transform: translateY(-50%); font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 0.12em; color: #fff; pointer-events: none; transition: opacity 0.3s; }
+.track-off { position: absolute; right: 22px; top: 50%; transform: translateY(-50%); font-family: 'Rajdhani', sans-serif; font-size: 17px; font-weight: 700; letter-spacing: 0.12em; color: rgba(255,255,255,0.35); pointer-events: none; transition: opacity 0.3s; }
+.toggle-track.off .track-on  { color: rgba(255,255,255,0.32); }
+.toggle-track.off .track-off { color: rgba(255,255,255,0.72); }
+.toggle-thumb {
+  position: absolute; top: 4px; left: calc(50% - 4px);
+  width: 56px; height: 56px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff, #d0d0d0);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.9);
+  transition: left 0.4s cubic-bezier(.16,1,.3,1);
+  pointer-events: none;
+}
+.toggle-track.off .toggle-thumb { left: calc(100% - 60px); }
+.toggle-track:active .toggle-thumb { width: 60px; }
+
+/* ── CLOSE ALL BUTTON ── */
+.close-all-section { margin-bottom: 8px; }
+.close-all-divider {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.close-all-divider::before, .close-all-divider::after {
+  content: ''; flex: 1; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(239,68,68,0.3), transparent);
+}
+.close-all-divider span {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.28em;
+  color: rgba(239,68,68,0.6); white-space: nowrap;
+}
+
+.btn-close-all {
+  width: 100%; padding: 15px;
+  background: linear-gradient(135deg, rgba(153,27,27,0.8) 0%, rgba(220,38,38,0.75) 50%, rgba(153,27,27,0.8) 100%);
+  border: 1px solid rgba(239,68,68,0.35);
+  border-radius: 13px;
+  color: #fca5a5; font-family: 'Rajdhani', sans-serif;
+  font-size: 14px; font-weight: 700; letter-spacing: 0.22em;
+  cursor: pointer; transition: all 0.3s ease;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  position: relative; overflow: hidden;
+}
+.btn-close-all::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.07) 0%, transparent 50%);
+}
+.btn-close-all:hover {
+  background: linear-gradient(135deg, rgba(180,30,30,0.9) 0%, rgba(239,68,68,0.85) 50%, rgba(180,30,30,0.9) 100%);
+  border-color: rgba(239,68,68,0.65);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(239,68,68,0.3);
+  transform: translateY(-1px);
+}
+.btn-close-all:active { transform: translateY(0); }
+.btn-close-all:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* ── CONFIRM MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,0.82);
+  backdrop-filter: blur(8px);
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.show { display: flex; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.modal-box {
+  width: 100%; max-width: 360px;
+  background: rgba(12,8,4,0.97);
+  border: 1px solid rgba(239,68,68,0.4);
+  border-radius: 20px;
+  padding: 36px 30px 28px;
+  text-align: center;
+  box-shadow: 0 0 0 1px rgba(239,68,68,0.1), 0 20px 60px rgba(0,0,0,0.8);
+  animation: modalIn 0.3s cubic-bezier(.16,1,.3,1) both;
+}
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.9) translateY(20px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-icon { font-size: 42px; margin-bottom: 14px; line-height: 1; }
+.modal-title {
+  font-family: 'Cinzel', serif;
+  font-size: 18px; font-weight: 700; letter-spacing: 0.1em;
+  color: #fca5a5; margin-bottom: 10px;
+}
+.modal-body {
+  font-size: 14px; line-height: 1.6;
+  color: rgba(255,255,255,0.55); margin-bottom: 24px;
+}
+.modal-body strong { color: rgba(255,255,255,0.78); }
+.modal-btns { display: flex; gap: 12px; }
+.btn-cancel {
+  flex: 1; padding: 13px;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px;
+  color: rgba(255,255,255,0.6); font-family: 'Rajdhani', sans-serif;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.14em;
+  cursor: pointer; transition: all 0.25s;
+}
+.btn-cancel:hover { background: rgba(255,255,255,0.10); color: #fff; }
+.btn-confirm {
+  flex: 1; padding: 13px;
+  background: linear-gradient(135deg, #991b1b, #ef4444, #991b1b);
+  border: 1px solid rgba(239,68,68,0.5); border-radius: 10px;
+  color: #fff; font-family: 'Rajdhani', sans-serif;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.14em;
+  cursor: pointer; transition: all 0.25s;
+}
+.btn-confirm:hover { box-shadow: 0 4px 16px rgba(239,68,68,0.4); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
+  z-index: 200;
+  padding: 12px 22px; border-radius: 40px;
+  font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.06em;
+  white-space: nowrap;
+  transition: transform 0.4s cubic-bezier(.16,1,.3,1), opacity 0.4s;
+  opacity: 0; pointer-events: none;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+.toast.success { background: rgba(22,101,52,0.95); border: 1px solid rgba(34,197,94,0.4); color: #86efac; }
+.toast.error   { background: rgba(127,29,29,0.95); border: 1px solid rgba(239,68,68,0.4);  color: #fca5a5; }
+.toast.warn    { background: rgba(120,53,15,0.95); border: 1px solid rgba(249,115,22,0.4); color: #fdba74; }
+
+/* ── FOOTER ── */
+.dash-footer {
+  padding: 12px 28px 20px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  text-align: center;
+}
+.footer-text {
+  font-size: 11px; color: rgba(255,255,255,0.22); letter-spacing: 0.06em;
+  font-family: 'Cormorant Garamond', serif; font-style: italic;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  .card { padding: 38px 22px 34px; border-radius: 20px; }
+  .dash-body { padding: 22px 20px 18px; }
+}
+</style>
+</head>
+<body>
+
+<div class="bg-wrap"></div>
+<div class="particles" id="particles"></div>
+
+<div class="page" id="mainPage">
+
+  <!-- ══════════════════════════════════════
+       SCREEN 1: LOGIN
+  ══════════════════════════════════════ -->
+  <div class="screen active" id="screenLogin">
+    <div class="card">
+
+      <div class="logo-wrap">
+        <svg class="logo-icon" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="gR" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff6b6b"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>
+            <linearGradient id="gG1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#86efac"/><stop offset="100%" stop-color="#16a34a"/></linearGradient>
+            <linearGradient id="gG2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#15803d"/></linearGradient>
+            <linearGradient id="gG3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#14532d"/></linearGradient>
+            <filter id="bg"><feGaussianBlur stdDeviation="1.6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <linearGradient id="sh" x1="0" y1="0" x2="0" y2="1" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="rgba(255,255,255,0.22)"/><stop offset="40%" stop-color="rgba(255,255,255,0)"/></linearGradient>
+          </defs>
+          <rect x="10" y="60" width="9" height="14" rx="2" fill="url(#gR)" filter="url(#bg)"/>
+          <rect x="10" y="60" width="9" height="14" rx="2" fill="url(#sh)" opacity="0.55"/>
+          <rect x="23" y="50" width="9" height="24" rx="2" fill="url(#gG1)" filter="url(#bg)"/>
+          <rect x="23" y="50" width="9" height="24" rx="2" fill="url(#sh)" opacity="0.45"/>
+          <rect x="36" y="38" width="9" height="36" rx="2" fill="url(#gG2)" filter="url(#bg)"/>
+          <rect x="36" y="38" width="9" height="36" rx="2" fill="url(#sh)" opacity="0.45"/>
+          <rect x="49" y="22" width="9" height="52" rx="2" fill="url(#gG3)" filter="url(#bg)"/>
+          <rect x="49" y="22" width="9" height="52" rx="2" fill="url(#sh)" opacity="0.35"/>
+
+        </svg>
+        <div class="brand-main">GOLDEN</div>
+        <div class="brand-sub">Artisan FX Trader</div>
+      </div>
+
+      <div class="gold-line"></div>
+
+      <div class="section-label"><span>MEMBER ACCESS</span></div>
+
+      <div id="loginAlert" class="alert"></div>
+
+      <div class="field">
+        <div class="field-lbl">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.58 3.3a2 2 0 0 1 1.98-2.18h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L7.91 8.4a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          WHATSAPP ID
+        </div>
+        <div class="input-wrap">
+          <svg class="input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4A017" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12 19.79 19.79 0 0 1 1.58 3.3a2 2 0 0 1 1.98-2.18h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.4a16 16 0 0 0 6 6l.92-.92a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          <input type="text" id="waInput" placeholder="Contoh: 628123456789" inputmode="numeric" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="field-lbl">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          SECURITY KEY
+        </div>
+        <div class="input-wrap">
+          <svg class="input-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4A017" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="skInput" placeholder="Masukkan Security Key" autocomplete="off">
+          <button class="eye-btn" onclick="toggleEye()" id="eyeBtn" type="button">
+            <svg id="eyeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="btn-wrap" style="margin-top:24px;margin-bottom:0">
+        <button class="btn btn-gold" id="btnLogin" onclick="handleLogin()">INITIALIZE</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       SCREEN 2: DASHBOARD
+  ══════════════════════════════════════ -->
+  <div class="screen" id="screenDash">
+    <div class="dash-card">
+
+      <!-- Header -->
+      <div class="dash-header">
+        <div class="dash-brand">
+          <svg class="dash-brand-icon" viewBox="0 0 88 88" fill="none">
+            <defs>
+              <linearGradient id="dr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#ff6b6b"/><stop offset="100%" stop-color="#b91c1c"/></linearGradient>
+              <linearGradient id="dg1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#86efac"/><stop offset="100%" stop-color="#16a34a"/></linearGradient>
+              <linearGradient id="dg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#4ade80"/><stop offset="100%" stop-color="#15803d"/></linearGradient>
+              <linearGradient id="dg3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22c55e"/><stop offset="100%" stop-color="#14532d"/></linearGradient>
+            </defs>
+            <rect x="10" y="60" width="9" height="14" rx="2" fill="url(#dr)"/>
+            <rect x="23" y="50" width="9" height="24" rx="2" fill="url(#dg1)"/>
+            <rect x="36" y="38" width="9" height="36" rx="2" fill="url(#dg2)"/>
+            <rect x="49" y="22" width="9" height="52" rx="2" fill="url(#dg3)"/>
+
+          </svg>
+          <span class="dash-brand-name">GOLDEN ARTISAN</span>
+        </div>
+        <div class="member-badge">
+          <div>
+            <div class="member-name" id="memberName">—</div>
+          </div>
+          <div class="member-avatar" id="memberAvatar">?</div>
+          <button class="logout-btn" onclick="handleLogout()">KELUAR</button>
+        </div>
+      </div>
+
+      <!-- Sync bar -->
+      <div class="sync-bar">
+        <div class="sync-dot" id="syncDot"></div>
+        <span class="sync-text" id="syncText">Menghubungkan ke Firebase...</span>
+      </div>
+
+      <!-- Body -->
+      <div class="dash-body">
+
+        <!-- Status ring + word -->
+        <div class="status-center">
+          <div class="status-ring online" id="statusRing">
+            <!-- icon changes online/offline -->
+            <svg class="status-icon" id="statusIcon" viewBox="0 0 44 44" fill="none">
+              <circle cx="22" cy="22" r="16" stroke="#22c55e" stroke-width="2" opacity="0.4"/>
+              <path id="statusPath" d="M14 22 L19 27 L30 16" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="status-word online" id="statusWord">ONLINE</div>
+          <div class="status-sub" id="statusSub">Semua EA Berjalan Normal</div>
+        </div>
+
+        <!-- Toggle -->
+        <div class="toggle-wrap">
+          <div class="toggle-lbl">MASTER SWITCH — EA ON / OFF</div>
+          <div class="toggle-track" id="toggleTrack" onclick="handleToggle()">
+            <span class="track-on">ON</span>
+            <span class="track-off">OFF</span>
+            <div class="toggle-thumb" id="toggleThumb"></div>
+          </div>
+        </div>
+
+        <!-- Close All Positions -->
+        <div class="close-all-section">
+          <div class="close-all-divider"><span>EMERGENCY ACTION</span></div>
+          <button class="btn-close-all" id="btnCloseAll" onclick="confirmCloseAll()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            CLOSE ALL POSITIONS
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="dash-footer">
+        <div class="footer-text">Golden Artisan FX · Master EA Control Panel · Real-time Firebase Sync</div>
+      </div>
+
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<!-- ══════════════════════════════════════
+     CONFIRM MODAL — Close All
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-icon">⚠️</div>
+    <div class="modal-title">TUTUP SEMUA POSISI?</div>
+    <div class="modal-body">
+      Tindakan ini akan mengirim sinyal <strong>CLOSE ALL</strong> ke semua akun MT5 yang terhubung di VPS.<br><br>
+      Semua posisi yang sedang terbuka akan <strong>ditutup sekarang</strong>. Tidak bisa dibatalkan.
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">BATAL</button>
+      <button class="btn-confirm" onclick="executeCloseAll()">YA, TUTUP SEMUA</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════
+   PARTICLES
+══════════════════════════════════════ */
+(function() {
+  const c = document.getElementById('particles');
+  for (let i = 0; i < 26; i++) {
+    const p = document.createElement('div');
+    p.classList.add('particle');
+    const s = Math.random() * 2.8 + 0.8;
+    p.style.cssText = `width:${s}px;height:${s}px;left:${Math.random()*100}%;bottom:${Math.random()*-8}%;animation-duration:${10+Math.random()*20}s;animation-delay:${Math.random()*14}s;`;
+    c.appendChild(p);
+  }
+})();
+
+/* ══════════════════════════════════════
+   TOGGLE EYE
+══════════════════════════════════════ */
+let eyeOpen = false;
+function toggleEye() {
+  eyeOpen = !eyeOpen;
+  const inp = document.getElementById('skInput');
+  inp.type = eyeOpen ? 'text' : 'password';
+  document.getElementById('eyeIcon').innerHTML = eyeOpen
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
+
+/* ══════════════════════════════════════
+   SCREEN SWITCH
+══════════════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ══════════════════════════════════════
+   STATE
+══════════════════════════════════════ */
+let currentUser = null;
+let eaIsOn      = true;
+let fbReady     = false;
+let eaListener  = null;
+
+/* ══════════════════════════════════════
+   FIREBASE READY
+══════════════════════════════════════ */
+window.addEventListener('firebase-ready', () => {
+  fbReady = true;
+});
+
+/* ══════════════════════════════════════
+   TOAST
+══════════════════════════════════════ */
+let toastTimer;
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ══════════════════════════════════════
+   ALERT
+══════════════════════════════════════ */
+function showAlert(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = `alert ${type}`;
+  el.textContent = msg;
+}
+function hideAlert(id) {
+  document.getElementById(id).className = 'alert';
+  document.getElementById(id).textContent = '';
+}
+
+/* ══════════════════════════════════════
+   LOGIN
+══════════════════════════════════════ */
+async function handleLogin() {
+  const btn  = document.getElementById('btnLogin');
+  const waId = document.getElementById('waInput').value.trim();
+  const sk   = document.getElementById('skInput').value.trim();
+
+  if (!waId || !sk) {
+    btn.style.animation = 'shake 0.4s ease';
+    setTimeout(() => btn.style.animation = '', 450);
+    showAlert('loginAlert', 'error', '⚠ Lengkapi WhatsApp ID dan Security Key');
+    return;
+  }
+
+  if (!fbReady) {
+    showAlert('loginAlert', 'error', '⚠ Firebase belum terhubung — cek konfigurasi dan koneksi internet');
+    return;
+  }
+
+  btn.textContent = 'VERIFYING...';
+  btn.disabled = true;
+  hideAlert('loginAlert');
+
+  try {
+    const { db, ref, get } = window._fb;
+    const snap = await get(ref(db, `members/${waId}`));
+
+    if (!snap.exists()) {
+      showAlert('loginAlert', 'error', '✗ WhatsApp ID tidak terdaftar');
+      resetLoginBtn(); return;
+    }
+
+    const member = snap.val();
+
+    if (member.active === false) {
+      showAlert('loginAlert', 'error', '✗ Akun tidak aktif — hubungi admin');
+      resetLoginBtn(); return;
+    }
+
+    if (member.securityKey !== sk) {
+      showAlert('loginAlert', 'error', '✗ Security Key salah');
+      resetLoginBtn(); return;
+    }
+
+    currentUser = { waId, name: member.name || waId };
+    loadDashboard();
+
+  } catch (err) {
+    showAlert('loginAlert', 'error', '✗ Koneksi Firebase gagal: ' + (err.message || err));
+    resetLoginBtn();
+  }
+}
+
+function resetLoginBtn() {
+  const btn = document.getElementById('btnLogin');
+  btn.textContent = 'INITIALIZE';
+  btn.disabled = false;
+}
+
+/* ══════════════════════════════════════
+   LOAD DASHBOARD
+══════════════════════════════════════ */
+function loadDashboard() {
+  document.getElementById('memberName').textContent   = currentUser.name;
+  document.getElementById('memberAvatar').textContent = currentUser.name.charAt(0).toUpperCase();
+  showScreen('screenDash');
+
+  const { db, ref, onValue } = window._fb;
+
+  // Listen EA on/off status
+  if (eaListener) eaListener();
+  eaListener = onValue(ref(db, 'ea_control/status'), (snap) => {
+    const val = snap.exists() ? snap.val() : true;
+    eaIsOn = (val === true || val === 'on' || val === 1);
+    updateDashUI();
+    setSyncBadge(true);
+  }, () => setSyncBadge(false));
+}
+
+/* ══════════════════════════════════════
+   UPDATE DASHBOARD UI
+══════════════════════════════════════ */
+function updateDashUI() {
+  const ring  = document.getElementById('statusRing');
+  const word  = document.getElementById('statusWord');
+  const sub   = document.getElementById('statusSub');
+  const track = document.getElementById('toggleTrack');
+  const spath = document.getElementById('statusPath');
+  const sring = document.querySelector('#statusIcon circle');
+
+  track.classList.remove('loading');
+
+  if (eaIsOn) {
+    ring.className  = 'status-ring online';
+    word.className  = 'status-word online';
+    word.textContent = 'ONLINE';
+    sub.textContent  = 'Semua EA Berjalan Normal';
+    track.classList.remove('off');
+    // checkmark icon
+    spath.setAttribute('d', 'M14 22 L19 27 L30 16');
+    spath.setAttribute('stroke', '#22c55e');
+    sring.setAttribute('stroke', '#22c55e');
+  } else {
+    ring.className  = 'status-ring offline';
+    word.className  = 'status-word offline';
+    word.textContent = 'OFFLINE';
+    sub.textContent  = 'Semua EA Dihentikan';
+    track.classList.add('off');
+    // X icon
+    spath.setAttribute('d', 'M16 16 L28 28 M28 16 L16 28');
+    spath.setAttribute('stroke', '#ef4444');
+    sring.setAttribute('stroke', '#ef4444');
+  }
+}
+
+/* ══════════════════════════════════════
+   TOGGLE EA ON/OFF
+══════════════════════════════════════ */
+async function handleToggle() {
+  const track = document.getElementById('toggleTrack');
+  if (track.classList.contains('loading')) return;
+  if (!fbReady) { showToast('Firebase tidak tersambung', 'error'); return; }
+
+  track.classList.add('loading');
+  const newVal = !eaIsOn;
+
+  try {
+    const { db, ref, set } = window._fb;
+    await set(ref(db, 'ea_control/status'), newVal);
+    showToast(newVal ? '✅ EA diaktifkan — sinyal ON dikirim' : '🔴 EA dinonaktifkan — sinyal OFF dikirim',
+              newVal ? 'success' : 'warn');
+  } catch (err) {
+    track.classList.remove('loading');
+    setSyncBadge(false, 'Gagal sync ke Firebase');
+    showToast('Gagal: ' + err.message, 'error');
+  }
+}
+
+/* ══════════════════════════════════════
+   CLOSE ALL POSITIONS
+══════════════════════════════════════ */
+function confirmCloseAll() {
+  document.getElementById('modalOverlay').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('show');
+}
+
+async function executeCloseAll() {
+  closeModal();
+  const btn = document.getElementById('btnCloseAll');
+  btn.disabled = true;
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> MENUTUP POSISI...`;
+
+  if (!fbReady) {
+    showToast('Firebase tidak tersambung', 'error');
+    resetCloseBtn(); return;
+  }
+
+  try {
+    const { db, ref, set } = window._fb;
+    const ts = new Date().toISOString();
+
+    // Tulis perintah close_all ke Firebase — dibaca Python VPS
+    await set(ref(db, 'ea_control/close_all'), {
+      trigger: true,
+      timestamp: ts,
+      by: currentUser.waId
+    });
+
+    // Reset close_all setelah 5 detik (agar tidak trigger ulang)
+    setTimeout(async () => {
+      try {
+        await set(ref(db, 'ea_control/close_all/trigger'), false);
+      } catch(e) {}
+    }, 5000);
+
+    showToast('🚨 Perintah CLOSE ALL dikirim ke VPS!', 'warn');
+  } catch (err) {
+    showToast('Gagal kirim perintah: ' + err.message, 'error');
+  }
+
+  setTimeout(resetCloseBtn, 4000);
+}
+
+function resetCloseBtn() {
+  const btn = document.getElementById('btnCloseAll');
+  btn.disabled = false;
+  btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> CLOSE ALL POSITIONS`;
+}
+
+/* ══════════════════════════════════════
+   SYNC BADGE
+══════════════════════════════════════ */
+function setSyncBadge(ok, msg) {
+  const dot  = document.getElementById('syncDot');
+  const text = document.getElementById('syncText');
+  if (ok) {
+    dot.classList.remove('error');
+    text.textContent = 'Firebase Synced · ' + new Date().toLocaleTimeString('id-ID');
+  } else {
+    dot.classList.add('error');
+    text.textContent = msg || 'Koneksi Firebase terputus';
+  }
+}
+
+/* ══════════════════════════════════════
+   LOGOUT
+══════════════════════════════════════ */
+function handleLogout() {
+  if (eaListener) { eaListener(); eaListener = null; }
+  currentUser = null;
+  document.getElementById('waInput').value = '';
+  document.getElementById('skInput').value = '';
+  resetLoginBtn();
+  hideAlert('loginAlert');
+  showScreen('screenLogin');
+}
+
+/* ══════════════════════════════════════
+   ENTER KEY
+══════════════════════════════════════ */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && document.getElementById('screenLogin').classList.contains('active'))
+    handleLogin();
+  if (e.key === 'Escape')
+    closeModal();
+});
+
+/* ══════════════════════════════════════
+   LOADING SPINNER CSS (injected)
+══════════════════════════════════════ */
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 0.8s linear infinite; display: inline-block; }
+`;
+document.head.appendChild(style);
+</script>
+
+<!-- ════════════════════════════════════════════════════════════
+     📋 PANDUAN LENGKAP SETUP
+     ════════════════════════════════════════════════════════════
+
+     ① FIREBASE CONFIG (baris ~25):
+        Ganti semua nilai YOUR_... dengan config asli dari Firebase Console
+        Project Settings → General → Your apps → Web app
+
+     ② STRUKTUR REALTIME DATABASE:
+        
+        members/
+          "628XXXXXXXXXX":           ← nomor WA tanpa +
+            name:        "Nama Anda"
+            securityKey: "password_bebas"
+            active:      true        ← HARUS boolean, bukan string
+
+        ea_control/
+          status:    true            ← true=ON, false=OFF
+          close_all/
+            trigger:   false
+            timestamp: ""
+            by:        ""
+
+     ③ DATABASE RULES:
+        {
+          "rules": {
+            "members": {
+              "$uid": { ".read": true, ".write": false }
+            },
+            "ea_control": {
+              ".read":  true,
+              ".write": true
+            }
+          }
+        }
+
+     ④ PYTHON VPS — tambahkan listener close_all di golden_ea_controller.py:
+        
+        def on_close_all_change(event):
+            val = event.data
+            if isinstance(val, dict) and val.get('trigger') == True:
+                log.info("🚨 CLOSE ALL command received!")
+                close_all_positions()  # implementasi di MQL5
+
+        ref_close = firebase_db.reference('ea_control/close_all')
+        ref_close.listen(on_close_all_change)
+
+     ⑤ MQL5 EA — tambahkan baca global variable:
+        
+        void OnTick() {
+          // Cek ON/OFF
+          if (GlobalVariableGet("GA_EA_ENABLED") == 0) return;
+          
+          // Cek Close All
+          if (GlobalVariableGet("GA_CLOSE_ALL") == 1) {
+            CloseAllPositions();
+            GlobalVariableSet("GA_CLOSE_ALL", 0);
+          }
+          // ... logika EA Anda ...
+        }
+
+        void CloseAllPositions() {
+          for (int i = PositionsTotal() - 1; i >= 0; i--) {
+            ulong ticket = PositionGetTicket(i);
+            if (ticket > 0) {
+              MqlTradeRequest req = {}; MqlTradeResult res = {};
+              req.action   = TRADE_ACTION_DEAL;
+              req.position = ticket;
+              req.symbol   = PositionGetString(POSITION_SYMBOL);
+              req.volume   = PositionGetDouble(POSITION_VOLUME);
+              req.type     = PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY
+                             ? ORDER_TYPE_SELL : ORDER_TYPE_BUY;
+              req.price    = PositionGetInteger(POSITION_TYPE) == POSITION_TYPE_BUY
+                             ? SymbolInfoDouble(req.symbol, SYMBOL_BID)
+                             : SymbolInfoDouble(req.symbol, SYMBOL_ASK);
+              req.deviation = 20;
+              OrderSend(req, res);
+            }
+          }
+        }
+
+════════════════════════════════════════════════════════════ -->
+</body>
+</html>
